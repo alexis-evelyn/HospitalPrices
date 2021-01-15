@@ -71,7 +71,9 @@ def read_large_npi_file():
                               'Provider Enumeration Date': 'string'  # datetime
                               }
 
-    npi_data: pd.DataFrame = pd.read_csv(filepath_or_buffer=npi_data_path, usecols=npi_columns, dtype=npi_column_types)
+    npi_data: pd.DataFrame = pd.read_csv(filepath_or_buffer=npi_data_path,
+                                         usecols=npi_columns,
+                                         dtype=npi_column_types)  # , nrows=100
 
     print("Dropping Non-US Businesses")
     # Drop All Not Null Rows Of "Provider Business Practice Location Address Country Code (If outside U.S.)"
@@ -83,7 +85,7 @@ def read_large_npi_file():
         npi_data["Provider Business Practice Location Address Country Code (If outside U.S.)"] == "US"]
 
     print("Dropping Non-Family Owned Businesses")
-    npi_data = npi_data[~npi_data['Provider Organization Name (Legal Business Name)'].isin([''])]
+    npi_data = npi_data[~npi_data['Provider Organization Name (Legal Business Name)'].isnull()]
 
     print("Dropping Country Column")
     npi_data.drop(columns=["Provider Business Practice Location Address Country Code (If outside U.S.)"], inplace=True)
@@ -101,9 +103,8 @@ def read_large_npi_file():
     print("Saving File To CSV For Backup")
     npi_data.to_csv("working/npi_trimmed_backup.csv")
 
-    # print("Dropping Deactivated NPIs That Were Never Reactivated")
-    # npi_data = npi_data.loc[~((not npi_data['NPI Deactivation Date'].eq('').bool()) &
-    #                           (npi_data['NPI Reactivation Date'].eq('').bool()))]
+    print("Dropping Deactivated NPIs That Were Never Reactivated")
+    npi_data = npi_data[~((~npi_data['NPI Deactivation Date'].isnull()) & (npi_data['NPI Reactivation Date'].isnull()))]
 
     print("Filling All Null Data With Empty String")
     npi_data.fillna('', inplace=True)
@@ -124,13 +125,13 @@ def read_large_npi_file():
     # npi_data.drop(columns=name_columns, inplace=True)
 
     # Fix For Only One Space Between Columns
-    print("Ensuring Only One Space Between Words In Name")
-    npi_data["name"] = npi_data["name"].map(lambda x: ' '.join(x.split()))  # For Loop In Disguise :(
+    # print("Ensuring Only One Space Between Words In Name")
+    # npi_data["name"] = npi_data["name"].map(lambda x: ' '.join(x.split()))  # For Loop In Disguise :(
     # npi_data["name"] = ' '.join(npi_data["name"].str.split())
 
     # Uppercase All Names
-    print("Uppercase Name Column")
-    npi_data["name"] = npi_data["name"].str.upper()
+    # print("Uppercase Name Column")
+    # npi_data["name"] = npi_data["name"].str.upper()
 
     print("Displaying Current State of DataFrame")
     print(npi_data)
@@ -149,7 +150,8 @@ def read_large_npi_file():
     npi_data.drop(columns=address_columns, inplace=True)
 
     print("Ensuring Only One Space Between Words In Address")
-    npi_data["street_address"] = npi_data["street_address"].map(lambda x: ' '.join(x.split()))  # For Loop In Disguise :(
+    npi_data["street_address"] = npi_data["street_address"].map(
+        lambda x: ' '.join(x.split()))  # For Loop In Disguise :(
     # npi_data["street_address"] = ' '.join(npi_data["street_address"].str.split())
 
     print("Uppercase Address Column")
@@ -163,8 +165,6 @@ def read_large_npi_file():
         "Provider Business Practice Location Address Postal Code": "zip_code",
         "Provider Enumeration Date": "publish_date"
     }
-
-
 
     print("Renaming Columns For Dolt Repo")
     npi_data.rename(columns=rename_columns, inplace=True)

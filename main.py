@@ -52,7 +52,7 @@ def read_large_npi_file():
                               "NPI Reactivation Date",
                               "Provider Enumeration Date"]
 
-    npi_column_types: dict = {'NPI': 'uint64',
+    npi_column_types: dict = {'NPI': 'uint64',  # uint64
                               'Provider Organization Name (Legal Business Name)': 'string',
                               'Provider Last Name (Legal Name)': 'string',
                               'Provider First Name': 'string',
@@ -63,7 +63,7 @@ def read_large_npi_file():
                               'Provider Second Line Business Practice Location Address': 'string',
                               'Provider Business Practice Location Address City Name': 'string',
                               'Provider Business Practice Location Address State Name': 'string',
-                              'Provider Business Practice Location Address Postal Code': 'uint32',
+                              'Provider Business Practice Location Address Postal Code': 'string',  # uint32
                               'Provider Business Practice Location Address Country Code (If outside U.S.)': 'string',
                               'NPI Deactivation Date': 'string',  # datetime
                               'NPI Reactivation Date': 'string',  # datetime
@@ -103,6 +103,9 @@ def read_large_npi_file():
     # "Provider Middle Name",
     # "Provider Name Prefix Text",
     # "Provider Name Suffix Text",
+
+    print("Filling All Null Data With Empty String")
+    npi_data.fillna('', inplace=True)
 
     name_columns: List[str] = ["Provider Organization Name (Legal Business Name)",
                                "Provider Name Prefix Text",

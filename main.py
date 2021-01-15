@@ -82,8 +82,8 @@ def read_large_npi_file():
     npi_data = npi_data.loc[
         npi_data["Provider Business Practice Location Address Country Code (If outside U.S.)"] == "US"]
 
-    npi_data = npi_data.loc[
-        ~npi_data["Provider Organization Name (Legal Business Name)"] == ""]
+    print("Dropping Non-Family Owned Businesses")
+    npi_data = npi_data[~npi_data['Provider Organization Name (Legal Business Name)'].isin([''])]
 
     print("Dropping Country Column")
     npi_data.drop(columns=["Provider Business Practice Location Address Country Code (If outside U.S.)"], inplace=True)

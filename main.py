@@ -1,6 +1,7 @@
 #!/bin/python3
 from typing import List
 
+import numpy as np
 import pandas as pd
 import doltpy
 from doltpy.core import Dolt
@@ -81,8 +82,11 @@ def read_large_npi_file():
     npi_data = npi_data.loc[
         npi_data["Provider Business Practice Location Address Country Code (If outside U.S.)"] == "US"]
 
+    npi_data = npi_data.loc[
+        ~npi_data["Provider Organization Name (Legal Business Name)"] == ""]
+
     print("Dropping Country Column")
-    npi_data.drop(columns=["Provider Business Practice Location Address Country Code (If outside U.S.)"])
+    npi_data.drop(columns=["Provider Business Practice Location Address Country Code (If outside U.S.)"], inplace=True)
 
     print("Displaying Current State of DataFrame")
     print(npi_data)
@@ -97,34 +101,32 @@ def read_large_npi_file():
     print("Saving File To CSV For Backup")
     npi_data.to_csv("working/npi_trimmed_backup.csv")
 
-    # "Provider Organization Name (Legal Business Name)",
-    # "Provider Last Name (Legal Name)",
-    # "Provider First Name",
-    # "Provider Middle Name",
-    # "Provider Name Prefix Text",
-    # "Provider Name Suffix Text",
+    # print("Dropping Deactivated NPIs That Were Never Reactivated")
+    # npi_data = npi_data.loc[~((not npi_data['NPI Deactivation Date'].eq('').bool()) &
+    #                           (npi_data['NPI Reactivation Date'].eq('').bool()))]
 
     print("Filling All Null Data With Empty String")
     npi_data.fillna('', inplace=True)
 
-    name_columns: List[str] = ["Provider Organization Name (Legal Business Name)",
-                               "Provider Name Prefix Text",
-                               "Provider First Name",
-                               "Provider Middle Name",
-                               "Provider Last Name (Legal Name)",
-                               "Provider Name Suffix Text"]
+    # name_columns: List[str] = ["Provider Organization Name (Legal Business Name)",
+    #                            "Provider Name Prefix Text",
+    #                            "Provider First Name",
+    #                            "Provider Middle Name",
+    #                            "Provider Last Name (Legal Name)",
+    #                            "Provider Name Suffix Text"]
 
     # This Only Works Because Organization Name Will Always Be Null If Other Name Is Not Null And Vice Versa
-    print("Combining Name Columns To One Column")
-    npi_data["name"] = npi_data[name_columns].agg(' '.join, axis=1)
+    # print("Combining Name Columns To One Column")
+    # npi_data["name"] = npi_data[name_columns].agg(' '.join, axis=1)
 
     # Destroy All Old Columns To Save Memory
-    print("Dropping All Old Name Columns")
-    npi_data.drop(columns=name_columns)
+    # print("Dropping All Old Name Columns")
+    # npi_data.drop(columns=name_columns, inplace=True)
 
     # Fix For Only One Space Between Columns
     print("Ensuring Only One Space Between Words In Name")
-    npi_data["name"] = ' '.join(npi_data["name"].str.split())
+    npi_data["name"] = npi_data["name"].map(lambda x: ' '.join(x.split()))  # For Loop In Disguise :(
+    # npi_data["name"] = ' '.join(npi_data["name"].str.split())
 
     # Uppercase All Names
     print("Uppercase Name Column")
@@ -134,12 +136,8 @@ def read_large_npi_file():
     print(npi_data)
     npi_data.to_csv("working/npi_trimmed_name_backup.csv")
 
-    print("Dropping Deactivated NPIs That Were Never Reactivated")
-    npi_data = npi_data.loc[~((not npi_data['NPI Deactivation Date'].isnull()) &
-                              (npi_data['NPI Reactivation Date'].isnull()))]
-
     print("Dropping Re/Deactivation Date Columns")
-    npi_data.drop(columns=["NPI Deactivation Date", "NPI Reactivation Date"])
+    npi_data.drop(columns=["NPI Deactivation Date", "NPI Reactivation Date"], inplace=True)
 
     address_columns: List[str] = ["Provider First Line Business Practice Location Address",
                                   "Provider Second Line Business Practice Location Address"]
@@ -148,27 +146,47 @@ def read_large_npi_file():
     npi_data["street_address"] = npi_data[address_columns].agg(', '.join, axis=1)
 
     print("Dropping All Old Address Columns")
-    npi_data.drop(columns=address_columns)
+    npi_data.drop(columns=address_columns, inplace=True)
 
     print("Ensuring Only One Space Between Words In Address")
-    npi_data["street_address"] = ' '.join(npi_data["street_address"].str.split())
+    npi_data["street_address"] = npi_data["street_address"].map(lambda x: ' '.join(x.split()))  # For Loop In Disguise :(
+    # npi_data["street_address"] = ' '.join(npi_data["street_address"].str.split())
 
     print("Uppercase Address Column")
     npi_data["street_address"] = npi_data["street_address"].str.upper()
 
     rename_columns: dict = {
         "NPI": "npi_number",
+        "Provider Organization Name (Legal Business Name)": "name",
         "Provider Business Practice Location Address City Name": "city",
         "Provider Business Practice Location Address State Name": "state",
         "Provider Business Practice Location Address Postal Code": "zip_code",
         "Provider Enumeration Date": "publish_date"
     }
 
+
+
     print("Renaming Columns For Dolt Repo")
     npi_data.rename(columns=rename_columns, inplace=True)
 
+    print("Replacing Empty Cells With Null")
+    npi_data.replace(r'^\s*$', np.nan, regex=True, inplace=True)
+
+    print("Fixing Addresses")
+    npi_data['street_address'].replace(to_replace=r',$', value='', inplace=True, regex=True)
+
+    print("Fixing Postal Codes")  # (\d{5})(\d{4})
+    # npi_data['zip_code'].replace(to_replace=r'(\d{5})(\d{4})', value=r'\1-\2', inplace=True, regex=True)
+    npi_data['zip_code'] = npi_data['zip_code'].str.replace(r'(\d{5})(\d{4})', r'\1-\2', regex=True)
+
+    print("Fixing Dates")  # mm/dd/yyyy -> yyyy-mm-dd
+    npi_data['publish_date'] = npi_data['publish_date'].str.replace(r'(\d{2})/(\d{2})/(\d{4})', r'\3-\1-\2', regex=True)
+
+    # print("Resetting Index")
+    # npi_data.reset_index(drop=True, inplace=True)
+
     print("Performing One Last Backup")
-    npi_data.to_csv("working/npi_trimmed_final_backup.csv")
+    npi_data.to_csv("working/npi_trimmed_final_backup.csv", index=False)
 
     print("Writing To Dolt Repo")
     raw_data_writer = get_df_table_writer('hospitals', lambda: npi_data, ['npi_number'])

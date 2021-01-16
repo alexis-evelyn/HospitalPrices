@@ -136,7 +136,7 @@ def read_large_npi_file():
 
     npi_data: pd.DataFrame = pd.read_csv(filepath_or_buffer=npi_data_path,
                                          usecols=npi_columns,
-                                         dtype=npi_column_types, nrows=100)  # , nrows=100
+                                         dtype=npi_column_types)  # , nrows=100
 
     print("Dropping Non-US Businesses")
     # Drop All Not Null Rows Of "Provider Business Practice Location Address Country Code (If outside U.S.)"
@@ -205,7 +205,6 @@ def read_large_npi_file():
     # Destroy All Old Columns To Save Memory
     print("Dropping All Old Name Columns")
     # npi_data.drop(columns=name_columns, inplace=True)
-    npi_data.drop(columns=["Provider Organization Name (Legal Business Name)"], inplace=True)
 
     # Fix For Only One Space Between Columns
     # print("Ensuring Only One Space Between Words In Name")
@@ -213,8 +212,9 @@ def read_large_npi_file():
     # npi_data["name"] = ' '.join(npi_data["name"].str.split())
 
     # Uppercase All Names
-    # print("Uppercase Name Column")
+    print("Uppercase Name Column")
     # npi_data["name"] = npi_data["name"].str.upper()
+    npi_data["Provider Organization Name (Legal Business Name)"] = npi_data["Provider Organization Name (Legal Business Name)"].str.upper()
 
     print("Displaying Current State of DataFrame")
     print(npi_data)

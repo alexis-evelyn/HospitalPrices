@@ -18,6 +18,34 @@ npi_data_path: str = "working/NPPES_Data_Dissemination_January_2021/npidata_pfil
 othername_path: str = "working/NPPES_Data_Dissemination_January_2021/othername_pfile_20050523-20210110.csv"
 pfile_path: str = "working/NPPES_Data_Dissemination_January_2021/pl_pfile_20050523-20210110.csv"
 
+# Source: https://data.cms.gov/Medicare-Enrollment/CROSSWALK-MEDICARE-PROVIDER-SUPPLIER-to-HEALTHCARE/j75i-rw8y/data
+hospital_taxonomic_codes: list = [
+    "2865X1600X",
+    "2865M2000X",
+    "286500000X",
+    "284300000X",
+    "283XC2000X",
+    "283X00000X",
+    "283Q00000X",
+    "282NW0100X",
+    "282NR1301X",
+    "282NC2000X",
+    "282NC0060X",
+    "282N00000X",
+    "282N00000X",
+    "282N00000X",
+    "282J00000X",
+    "282E00000X",
+    "281PC2000X",
+    "281P00000X",
+    "276400000X",
+    "275N00000X",
+    "273Y00000X",
+    "273R00000X",
+    "273100000X",
+    "208M00000X"
+]
+
 
 def read_large_npi_file():
     # Columns To Keep
@@ -38,11 +66,11 @@ def read_large_npi_file():
 
     npi_columns: List[str] = ["NPI",
                               "Provider Organization Name (Legal Business Name)",
-                              "Provider Last Name (Legal Name)",
-                              "Provider First Name",
-                              "Provider Middle Name",
-                              "Provider Name Prefix Text",
-                              "Provider Name Suffix Text",
+                              # "Provider Last Name (Legal Name)",
+                              # "Provider First Name",
+                              # "Provider Middle Name",
+                              # "Provider Name Prefix Text",
+                              # "Provider Name Suffix Text",
                               "Provider First Line Business Practice Location Address",
                               "Provider Second Line Business Practice Location Address",
                               "Provider Business Practice Location Address City Name",
@@ -51,15 +79,32 @@ def read_large_npi_file():
                               "Provider Business Practice Location Address Country Code (If outside U.S.)",
                               "NPI Deactivation Date",
                               "NPI Reactivation Date",
-                              "Provider Enumeration Date"]
+
+                              # Taxonomic Codes
+                              "Healthcare Provider Taxonomy Code_1",
+                              "Healthcare Provider Taxonomy Code_2",
+                              "Healthcare Provider Taxonomy Code_3",
+                              "Healthcare Provider Taxonomy Code_4",
+                              "Healthcare Provider Taxonomy Code_5",
+                              "Healthcare Provider Taxonomy Code_6",
+                              "Healthcare Provider Taxonomy Code_7",
+                              "Healthcare Provider Taxonomy Code_8",
+                              "Healthcare Provider Taxonomy Code_9",
+                              "Healthcare Provider Taxonomy Code_10",
+                              "Healthcare Provider Taxonomy Code_11",
+                              "Healthcare Provider Taxonomy Code_12",
+                              "Healthcare Provider Taxonomy Code_13",
+                              "Healthcare Provider Taxonomy Code_14",
+                              "Healthcare Provider Taxonomy Code_15"
+                              ]  # "Provider Enumeration Date"]
 
     npi_column_types: dict = {'NPI': 'uint64',  # uint64
                               'Provider Organization Name (Legal Business Name)': 'string',
-                              'Provider Last Name (Legal Name)': 'string',
-                              'Provider First Name': 'string',
-                              'Provider Middle Name': 'string',
-                              'Provider Name Prefix Text': 'string',
-                              'Provider Name Suffix Text': 'string',
+                              # 'Provider Last Name (Legal Name)': 'string',
+                              # 'Provider First Name': 'string',
+                              # 'Provider Middle Name': 'string',
+                              # 'Provider Name Prefix Text': 'string',
+                              # 'Provider Name Suffix Text': 'string',
                               'Provider First Line Business Practice Location Address': 'string',
                               'Provider Second Line Business Practice Location Address': 'string',
                               'Provider Business Practice Location Address City Name': 'string',
@@ -68,12 +113,30 @@ def read_large_npi_file():
                               'Provider Business Practice Location Address Country Code (If outside U.S.)': 'string',
                               'NPI Deactivation Date': 'string',  # datetime
                               'NPI Reactivation Date': 'string',  # datetime
-                              'Provider Enumeration Date': 'string'  # datetime
+
+                              # Taxonomic Codes
+                              'Healthcare Provider Taxonomy Code_1': 'string',
+                              'Healthcare Provider Taxonomy Code_2': 'string',
+                              'Healthcare Provider Taxonomy Code_3': 'string',
+                              'Healthcare Provider Taxonomy Code_4': 'string',
+                              'Healthcare Provider Taxonomy Code_5': 'string',
+                              'Healthcare Provider Taxonomy Code_6': 'string',
+                              'Healthcare Provider Taxonomy Code_7': 'string',
+                              'Healthcare Provider Taxonomy Code_8': 'string',
+                              'Healthcare Provider Taxonomy Code_9': 'string',
+                              'Healthcare Provider Taxonomy Code_10': 'string',
+                              'Healthcare Provider Taxonomy Code_11': 'string',
+                              'Healthcare Provider Taxonomy Code_12': 'string',
+                              'Healthcare Provider Taxonomy Code_13': 'string',
+                              'Healthcare Provider Taxonomy Code_14': 'string',
+                              'Healthcare Provider Taxonomy Code_15': 'string'
+
+                              # 'Provider Enumeration Date': 'string'  # datetime
                               }
 
     npi_data: pd.DataFrame = pd.read_csv(filepath_or_buffer=npi_data_path,
                                          usecols=npi_columns,
-                                         dtype=npi_column_types)  # , nrows=100
+                                         dtype=npi_column_types, nrows=100)  # , nrows=100
 
     print("Dropping Non-US Businesses")
     # Drop All Not Null Rows Of "Provider Business Practice Location Address Country Code (If outside U.S.)"
@@ -90,6 +153,25 @@ def read_large_npi_file():
     print("Dropping Country Column")
     npi_data.drop(columns=["Provider Business Practice Location Address Country Code (If outside U.S.)"], inplace=True)
 
+    print("Dropping Non-Matching Taxonomic Codes")
+    npi_data: pd.DataFrame = npi_data[
+        npi_data['Healthcare Provider Taxonomy Code_1'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_2'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_3'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_4'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_5'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_6'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_7'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_8'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_9'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_10'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_11'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_12'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_13'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_14'].isin(hospital_taxonomic_codes) |
+        npi_data['Healthcare Provider Taxonomy Code_15'].isin(hospital_taxonomic_codes)
+        ]
+
     print("Displaying Current State of DataFrame")
     print(npi_data)
     npi_data.info(verbose=False, memory_usage="deep")
@@ -100,8 +182,8 @@ def read_large_npi_file():
     # print("Unique Values For Address First Line")
     # print(npi_data['Provider First Line Business Practice Location Address'].unique())
 
-    print("Saving File To CSV For Backup")
-    npi_data.to_csv("working/npi_trimmed_backup.csv")
+    # print("Saving File To CSV For Backup")
+    # npi_data.to_csv("working/npi_trimmed_backup.csv")
 
     print("Dropping Deactivated NPIs That Were Never Reactivated")
     npi_data = npi_data[~((~npi_data['NPI Deactivation Date'].isnull()) & (npi_data['NPI Reactivation Date'].isnull()))]
@@ -121,8 +203,9 @@ def read_large_npi_file():
     # npi_data["name"] = npi_data[name_columns].agg(' '.join, axis=1)
 
     # Destroy All Old Columns To Save Memory
-    # print("Dropping All Old Name Columns")
+    print("Dropping All Old Name Columns")
     # npi_data.drop(columns=name_columns, inplace=True)
+    npi_data.drop(columns=["Provider Organization Name (Legal Business Name)"], inplace=True)
 
     # Fix For Only One Space Between Columns
     # print("Ensuring Only One Space Between Words In Name")
@@ -163,7 +246,7 @@ def read_large_npi_file():
         "Provider Business Practice Location Address City Name": "city",
         "Provider Business Practice Location Address State Name": "state",
         "Provider Business Practice Location Address Postal Code": "zip_code",
-        "Provider Enumeration Date": "publish_date"
+        # "Provider Enumeration Date": "publish_date"
     }
 
     print("Renaming Columns For Dolt Repo")
@@ -179,8 +262,8 @@ def read_large_npi_file():
     # npi_data['zip_code'].replace(to_replace=r'(\d{5})(\d{4})', value=r'\1-\2', inplace=True, regex=True)
     npi_data['zip_code'] = npi_data['zip_code'].str.replace(r'(\d{5})(\d{4})', r'\1-\2', regex=True)
 
-    print("Fixing Dates")  # mm/dd/yyyy -> yyyy-mm-dd
-    npi_data['publish_date'] = npi_data['publish_date'].str.replace(r'(\d{2})/(\d{2})/(\d{4})', r'\3-\1-\2', regex=True)
+    # print("Fixing Dates")  # mm/dd/yyyy -> yyyy-mm-dd
+    # npi_data['publish_date'] = npi_data['publish_date'].str.replace(r'(\d{2})/(\d{2})/(\d{4})', r'\3-\1-\2', regex=True)
 
     # print("Resetting Index")
     # npi_data.reset_index(drop=True, inplace=True)
